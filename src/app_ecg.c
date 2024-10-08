@@ -205,6 +205,7 @@ void APP_ECG_Output( int16_t *SampleBuf, int16_t RingIdx )
 
 bool SensorInference = false;
 uint8_t UART_ReadByte[1];
+bool buffer_init = false;
 void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
 {
     int i;
@@ -249,7 +250,6 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                 }
             }
             break;
-            //Hi
 
         case BMD101_CODE_ECG_RAW: // 16-bit Raw Data (2’s Complement), 2 bytes w/ LENGTH byte
             if( i<Length-3 )
@@ -270,6 +270,7 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                        
                     if( BMD101_SignalQaulity == SENSOR_ON )
                     {
+                        //start the inference once it get the triggered signal('k')
                         if(SERCOM5_USART_Read(UART_ReadByte, 1))
                         {
                             // Echo UART input
@@ -280,22 +281,37 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                             {
                             case 'k': case 'K':
                                 SensorInference = true;
-                                break;
-                            case 'f': case 'F':
-                                SensorInference = false;
+                                buffer_init = true;
                                 break;
                             }
                         }
-                        
+                        // inference control
                         if(SensorInference==true)
                         {
-                            switch( sml_recognition_run(&ECG_Signal, 1) )
+                            if(buffer_init==true)
                             {
-                            case 1:  APP_OLED_ML_Inference("AFib"); 
-                                    myprintf("AFib\r\n");break;
-                            case 2:  APP_OLED_ML_Inference("Normal");
-                                    myprintf("Normal\r\n"); break;
-                            default: break;//APP_OLED_ML_Inference("Who are you?"); break;
+                                // initialize the buffer for model input
+                                sml_recognition_run(&ECG_Signal, 1, buffer_init);
+                                buffer_init = false;
+                            }
+                            else
+                            {
+                                // send one data point to the model for accumulation, as the data accumulate as many as model input, it will return 0 or 1, otherwise, it will return negative value 
+                                switch( sml_recognition_run(&ECG_Signal, 1, buffer_init) )
+                                {
+                                case 1:  APP_OLED_ML_Inference("AFib"); 
+                                        myprintf("AFib\r\n");
+                                        // as the model inference complete one data, it will stop
+                                        SensorInference = false;
+                                        break;
+                                case 2:  APP_OLED_ML_Inference("Normal");
+                                        myprintf("Normal\r\n");
+                                        // as the model inference complete one data, it will stop
+                                        SensorInference = false;
+                                        break;
+                                default: //when data points accumulation is not sufficient for model input, it will do nothing
+                                        break;
+                                }
                             }
                         }
                             

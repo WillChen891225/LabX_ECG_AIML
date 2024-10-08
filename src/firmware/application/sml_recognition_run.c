@@ -17,13 +17,23 @@ void sml_output_results(uint16_t model, uint16_t classification)
     printf("%s\n", serial_out_buf);
 }
 
-int32_t sml_recognition_run(int16_t *data, int32_t num_sensors)
+int32_t sml_recognition_run(int16_t *data, int32_t num_sensors, bool initialize)
 {
     int32_t ret;
-    		ret = kb_run_model((int16_t *)data, num_sensors, KB_MODEL_TEST_1_RANK_0_INDEX);
-		if (ret >= 0){
-			sml_output_results(KB_MODEL_TEST_1_RANK_0_INDEX, ret);
-			kb_reset_model(0);
-		};
-    return ret;
+    if(initialize==true){
+        //initialize the model input buffer
+        kb_reset_model(0);
+        ret=-1;
+    }
+    else
+    {
+        //once the data points is sufficient for model input, it will return 1 ot 0, otherwise, it will return negative value
+        ret = kb_run_model((int16_t *)data, num_sensors, KB_MODEL_TEST_1_RANK_0_INDEX);
+        if (ret >= 0){
+            sml_output_results(KB_MODEL_TEST_1_RANK_0_INDEX, ret);
+            //once the model complete one inference, it will initialize the model
+            kb_reset_model(0);
+        };
+    }
+    return ret;//return the value of model inference
 }
