@@ -249,6 +249,7 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                 }
             }
             break;
+            //Hi
 
         case BMD101_CODE_ECG_RAW: // 16-bit Raw Data (2’s Complement), 2 bytes w/ LENGTH byte
             if( i<Length-3 )
@@ -271,6 +272,7 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                     {
                         if(SERCOM5_USART_Read(UART_ReadByte, 1))
                         {
+                            // Echo UART input
                             SERCOM5_USART_Write(UART_ReadByte, 1);
                             while( SERCOM5_USART_WriteIsBusy() ) {}
                             // Check key-in byte
@@ -301,7 +303,7 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                         if     ( VR1_Pos<=1 ) { ECG_RawFiltered = ECG_Signal; } // No Filter
                         else if( VR1_Pos>=4 ) { ECG_RawFiltered = APP_ECG_MovingAverage( ECG_Signal ); } // Moving Average
                         else                  { ECG_RawFiltered = APP_ECG_IIR( ECG_Signal ); } // IIR Filter
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
                         // Move in new Filtered ECG data to end of ring buffer
                         ECG_SampleBuffer[ECG_SampleBufferRingIdx]=ECG_RawFiltered;
 
