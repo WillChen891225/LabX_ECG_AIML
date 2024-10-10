@@ -47,6 +47,8 @@ enum {
     DELAY_TIMER_HEARTBEAT_LED_DUTY,
     DELAY_TIMER_SPLASH_WAIT,
     DELAY_TIMER_GRPAHIC_UPDATE,
+    DELAY_TIMER_INFERENCE_INTERVAL,
+    DELAY_TIMER_5_sec_INTERVAL,
     MAX_DELAY_TIMER
 };
 
@@ -54,6 +56,8 @@ enum {
 #define HEARTBEAT_LED_DUTY_DELAY    100  // The Heartbeat LED On to Off interval duty delay (LED1)
 #define SPLASH_WAIT_DELAY           1000 // The delay time after splash screen
 #define GRPAHIC_UPDATE_DELAY        100  // The OLED update interval delay
+#define INFERENCE_INTERVAL          3 // The Inference Interval time
+#define five_sec_INTERVAL          5000 // The Inference Interval time
 
     // *****************************************************************************
     // *****************************************************************************

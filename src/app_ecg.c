@@ -206,6 +206,7 @@ void APP_ECG_Output( int16_t *SampleBuf, int16_t RingIdx )
 bool SensorInference = false;
 uint8_t UART_ReadByte[1];
 bool buffer_init = false;
+uint16_t count = 0;
 void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
 {
     int i;
@@ -293,24 +294,41 @@ void BMD101_CODE_Parser( uint8_t *pPayload, uint8_t Length )
                                 // initialize the buffer for model input
                                 sml_recognition_run(&ECG_Signal, 1, buffer_init);
                                 buffer_init = false;
+                                
+                                // Start the Inference Interval Timer.
+                                TC4_DelayMS( INFERENCE_INTERVAL, DELAY_TIMER_INFERENCE_INTERVAL );
+                                // Start the 5s Interval Timer.
+                                TC4_DelayMS( five_sec_INTERVAL, DELAY_TIMER_5_sec_INTERVAL );
                             }
                             else
                             {
-                                // send one data point to the model for accumulation, as the data accumulate as many as model input, it will return 0 or 1, otherwise, it will return negative value 
-                                switch( sml_recognition_run(&ECG_Signal, 1, buffer_init) )
+                                if(TC4_DelayIsComplete( DELAY_TIMER_5_sec_INTERVAL))
                                 {
-                                case 1:  APP_OLED_ML_Inference("AFib"); 
-                                        myprintf("AFib\r\n");
-                                        // as the model inference complete one data, it will stop
-                                        SensorInference = false;
-                                        break;
-                                case 2:  APP_OLED_ML_Inference("Normal");
-                                        myprintf("Normal\r\n");
-                                        // as the model inference complete one data, it will stop
-                                        SensorInference = false;
-                                        break;
-                                default: //when data points accumulation is not sufficient for model input, it will do nothing
-                                        break;
+                                    myprintf("%d\r\n",count);
+                                    count = 0;
+                                }
+                                if(TC4_DelayIsComplete( DELAY_TIMER_INFERENCE_INTERVAL))
+                                {
+                                    count = count + 1;
+                                    
+                                    // send one data point to the model for accumulation, as the data accumulate as many as model input, it will return 0 or 1, otherwise, it will return negative value 
+                                    switch( sml_recognition_run(&ECG_Signal, 1, buffer_init) )
+                                    {
+                                    case 1:  APP_OLED_ML_Inference("AFib"); 
+                                            myprintf("AFib\r\n");
+                                            // as the model inference complete one data, it will stop
+                                            SensorInference = false;
+                                            break;
+                                    case 2:  APP_OLED_ML_Inference("Normal");
+                                            myprintf("Normal\r\n");
+                                            // as the model inference complete one data, it will stop
+                                            SensorInference = false;
+                                            break;
+                                    default: //when data points accumulation is not sufficient for model input, it will do nothing
+                                            break;
+                                    }
+                                    // Re-Start the Inference Interval Timer.
+                                    TC4_DelayMS( INFERENCE_INTERVAL, DELAY_TIMER_INFERENCE_INTERVAL );
                                 }
                             }
                         }
